@@ -1,4 +1,4 @@
-setwd("/home/amelie/nas/PKU_Inter99/merged_kasper/data/sim_snps_1/")
+setwd("/home/amelie/nas/PKU_Inter99/merged_kasper/data/snp_simulation/sim_snps_1/")
 library(data.table)
 library(broom)
 library(tidyverse)
