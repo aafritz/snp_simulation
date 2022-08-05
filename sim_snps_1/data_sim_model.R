@@ -1,4 +1,4 @@
-setwd("/home/amelie/nas/PKU_Inter99/merged_kasper/data/sim_snps_1/")
+setwd("/home/amelie/nas/PKU_Inter99/merged_kasper/data/snp_simulation/sim_snps_1/")
 rm(list=ls())
 library(data.table)
 library(broom)
@@ -6,16 +6,20 @@ library(tidyverse)
 
 set.seed(123)
 N_SNPs <- 10
-N_ind <- 5
+N_ind <- 10000
 N_int <- 5
 
-b_main <- matrix(rnorm(N_SNPs*N_ind, 0, 0.01), N_ind, N_SNPs)
+# sample beta g, sex and interaction with no effect
+b_g <- matrix(rnorm(N_SNPs, 0, 0.01), 1, N_SNPs)
+b_g <- rnorm(N_SNPs, 0, 0.01)
 b_sex <- rnorm(1, 0, 0.01)
-b_int <- matrix(rnorm(N_SNPs, 0, 0.01), N_ind, N_SNPs)
+b_int <- rnorm(N_SNPs, 0, 0.01)
 
+# sample N_int positions for SNPs with effects from all SNPs and exchange their beta (effect size)
 pos_int <- sample(N_SNPs, N_int)
 b_int[pos_int] <- rnorm(N_int, 0.5, 0.01)
 
+# intercept
 b_0 <- 0
 
 MAF <- runif(N_SNPs*N_ind, 0.1, 0.49)
@@ -24,47 +28,22 @@ g <- matrix(rbinom(N_SNPs*N_ind, 2, MAF), N_ind, N_SNPs)
 
 sex <- rbinom(N_ind, 1, 0.5)
 
-logit <- b_0 + b_main*g + b_sex*sex + b_int*g*sex
-prob <- exp(logit)/(exp(logit)+1)
-pheno <- matrix(rbinom(N_ind*N_SNPs, 1, prob), N_ind, N_SNPs)
-
-i <- 1
-ii <- 1
-for (i in 1:N_ind) {
-  for (ii in 1:N_SNPs) {
-    data_cur <- list(pheno_cur = pheno[i, ii],
-                 g_cur = g[i, ii],
-                 sex_cur = sex[i])
-    pheno_cur <- pheno[i, ii]
-    g_cur <- g[i, ii]
-    sex_cur <- sex[i]
-    glm(pheno_cur ~ g_cur + sex_cur + g_cur*sex_cur, family = binomial) %>% 
-      tidy()
-  }
+res_all <- NULL
+for (i in 1:N_SNPs) {
+  logit <- b_0 + b_sex*sex + b_g[i]*g[,i] + b_int[i]*(sex*g[,i])
+  prob <- exp(logit)/(exp(logit)+1)
+  pheno <- rbinom(N_ind, 1, prob)
+  
+  fit <- glm(pheno ~ g[,i] + sex + g[,i]*sex, family = binomial) %>% 
+    tidy() 
+  fit_t <- fit[,c("term","estimate")]
+  res <- data.frame(true = c(b_0, b_g[i], b_sex, b_int[i]))
+  #res <- data.frame(true = c(b_0, b_g[i]))
+  fit_t <- cbind(fit_t, res, i)
+  fit_t
+  res_all <- rbind(res_all, fit_t)
 }
-
-y <- 1
-x <- 1
-
-glm(y ~ x, family=binomial) %>% 
-  tidy()
+filter(res_all, term=="g[, i]:sex")
 
 
 
-set.seed(42)
-df <- data.frame(target = sample(0:1, 10, TRUE),
-                 F1 = rnorm(10), F2 = rnorm(10), F3 = rnorm(10))
-
-
-predictors <- c("F1", "F2", "F3")    
-fits <- sapply(predictors,
-               function(x) {
-                 tmp <- try(coef(summary(glm(as.formula(paste("target", x, sep = "~")),
-                                             family=binomial, data = df)))[2, ], TRUE)
-                 if (class(tmp) == "try-error") NULL else tmp})
-
-glm(df$target[1] ~ df$F1[1] + df$F2[1] + df$F1[1]*df$F2[1]) %>% 
-  tidy()
-
-glm(df$target ~ df$F1 + df$F2 + df$F1*df$F2) %>% 
-  tidy()
