@@ -32,11 +32,11 @@ g <- matrix(rbinom(N_SNPs*N_ind, 2, MAF), N_ind, N_SNPs)
 
 sex <- rbinom(N_ind, 1, 0.5)
 
-model <- stan_model(file = "model_anders_nocovar.stan")  
+model <- stan_model(file = "model_anders_nocovar_student_t.stan")  
 res_all <- NULL
-#for (i in 1:N_SNPs) {
+i <- 1
 r <- mclapply(1:N_SNPs, function(i) {
-  
+
   int <- sex*g[,i]
   logit <- b_0 + b_sex*sex + b_g[i]*g[,i] + b_int[i]*int
   prob <- exp(logit)/(exp(logit)+1)
@@ -82,7 +82,15 @@ r <- mclapply(1:N_SNPs, function(i) {
           b_int, sd_int, n_eff_int, rhat_int))
   
 }, mc.cores=10)
-print(r)
 
+result_df <- data.frame(matrix(unlist(r), ncol=13, byrow=TRUE))
+colnames(result_df) <- c("snp", "b_sex", "sd_sex", "n_eff_sex", "rhat_sex", 
+                         "b_SNP", "sd_SNP", "n_eff_SNP", "rhat_SNP", 
+                         "b_int", "sd_int", "n_eff_int", "rhat_int")
+
+data.frame(snp=result_df$snp, b_int_real = b_int, b_int_inf = result_df$b_int) %>% 
+  write.table("results_int_student_t.txt", row.names = F, quote = F)
+
+write.table(result_df, file = "results_student_t.txt", row.names = F, quote = F)
 
 
