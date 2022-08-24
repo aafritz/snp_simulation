@@ -14,7 +14,7 @@ res_all3 <- res_all2 %>%
   add_column(int_freq=ifelse(res_all2$OR_freq>1.1 | res_all2$OR_freq<0.9, 1, 0), .after="OR_true") %>% 
   add_column(int_bayes=ifelse(res_all2$OR_bayes>1.1 | res_all2$OR_bayes<0.9, 1, 0), .after="OR_true") %>% 
   add_column(int_true=ifelse(res_all2$OR_true>1.1 | res_all2$OR_true<0.9, 1, 0), .after="OR_true") %>% 
-  order(decreasing=T)
+  arrange(by = prob, decreasing=T)
 
 sum(res_all3$int_true)
 sum(res_all3$int_bayes)
@@ -25,3 +25,5 @@ res_all3 %>%
 
 res_all3 %>% 
   filter(int_true==1)
+
+write.table(res_all3, "res_all_complete.txt", quote = F, row.names = F)

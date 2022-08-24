@@ -17,15 +17,22 @@ identical(rownames(geno), fam$V2)
 N_ind <- nrow(geno)
 N_SNPs <- ncol(geno)
 N_int <- 10
+N_m_ef <- 100
 
 # sample beta g, sex and interaction with no effect
 b_g <- rnorm(N_SNPs, 0, 0.01)
 b_sex <- rnorm(1, 0, 0.01)
 b_int <- rnorm(N_SNPs, 0, 0.01)
 
+# sample N_m_eff positions for SNPs with main effects from all SNPs and exchange their beta (effect size)
+pos_main <- sample(N_SNPs, N_m_ef, replace = FALSE)
+m_dir <- rbinom(N_m_ef,1 , 0.5) 
+b_g[pos_main] <- ifelse(m_dir==0, rnorm(N_m_ef, -0.5, 0.01), rnorm(N_m_ef, 0.5, 0.01))
+
 # sample N_int positions for SNPs with effects from all SNPs and exchange their beta (effect size)
 pos_int <- sample(N_SNPs, N_int, replace = FALSE)
-b_int[pos_int] <- rnorm(N_int, 0.5, 0.01)
+m_dir <- rbinom(N_int, 1, 0.5)
+b_int[pos_int] <- ifelse(m_dir==0, rnorm(N_int, -0.5, 0.01), rnorm(N_int, 0.5, 0.01))
 
 # intercept
 b_0 <- 0
@@ -52,7 +59,7 @@ prob <- exp(logit)/(exp(logit)+1)
 pheno <- rbinom(N_ind, 1, prob)
 
 d_test <- data.frame(pheno = pheno, geno, sex = sex)
-#write.table(d_test, file = "d_test.txt")
+write.table(d_test, file = "d_test.txt")
 
 res <- list()
 ii <- 1
@@ -111,7 +118,7 @@ system.time(
     sd_int <- round(as.numeric(fit_summary["sd"]), 3)
     
     print(c(snp_name, beta_int, sd_int))
-  }, mc.cores=9)
+  }, mc.cores=25)
 )
 
 res <- as.data.frame(matrix(unlist(r), ncol=3, byrow=TRUE))
