@@ -1,6 +1,6 @@
 rm(list=ls())
-path_WD <- "/home/amelie/nas/PKU_Inter99/merged_kasper/data/snp_simulation/real_geno_sim_pheno/run_mainef_bothdir/"
-path_to_plinkfiles <- "/home/amelie/nas/PKU_Inter99/merged_kasper/data/clumped_data/clumped_data/PKU_Inter99_clumped"
+path_WD <- ""
+path_to_plinkfiles <- ""
 
 setwd(path_WD)
 library(data.table)
